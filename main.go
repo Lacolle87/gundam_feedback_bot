@@ -6,7 +6,6 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/joho/godotenv"
 	"gundam_feedback_bot/logger"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -102,13 +101,7 @@ func main() {
 
 // Загрузка ответов из JSON
 func loadResponsesFromFile(filename string) error {
-	file, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	byteValue, err := ioutil.ReadAll(file)
+	byteValue, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
