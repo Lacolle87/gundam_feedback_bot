@@ -1,0 +1,8 @@
+{
+  "logDir": "logs",
+  "maxSize": 1,
+  "maxBackups": 5,
+  "maxAge": 30,
+  "compress": false,
+  "timezone": "Europe/Moscow"
+}
