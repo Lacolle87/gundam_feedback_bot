@@ -13,7 +13,7 @@ import (
 )
 
 var botToken string
-var chatIDs []int64
+var adminIDs []int64
 var responses map[string]string
 
 func main() {
@@ -29,20 +29,20 @@ func main() {
 		log.Fatal("Токен бота не найден в .env файле.")
 	}
 
-	// Получение chat IDs из переменных окружения
-	chatIDStrings := os.Getenv("CHAT_IDS")
-	if chatIDStrings == "" {
+	// Получение admin chat IDs из переменных окружения
+	adminIDStrings := os.Getenv("ADMIN_IDS")
+	if adminIDStrings == "" {
 		log.Fatal("Chat IDs не найдены в .env файле.")
 	}
 
 	// Разделение строки на отдельные chat IDs
-	chatIDStringsSlice := strings.Split(chatIDStrings, ",")
-	for _, idStr := range chatIDStringsSlice {
+	adminIDStringsSlice := strings.Split(adminIDStrings, ",")
+	for _, idStr := range adminIDStringsSlice {
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
 			log.Fatalf("Ошибка при парсинге chat ID: %v", err)
 		}
-		chatIDs = append(chatIDs, id)
+		adminIDs = append(adminIDs, id)
 	}
 
 	// Загрузка конфигурации логгера из файла
@@ -89,8 +89,8 @@ func main() {
 		// Определение chatID отправителя
 		senderChatID := update.Message.Chat.ID
 
-		// Пересылка сообщения каждому chat ID из списка chatIDs
-		for _, id := range chatIDs {
+		// Пересылка сообщения каждому chat ID из списка adminIDs
+		for _, id := range adminIDs {
 			if update.Message.IsCommand() {
 				handleCommand(bot, update.Message, botLogger, senderChatID)
 			} else if update.Message.Photo != nil {
