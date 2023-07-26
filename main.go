@@ -86,14 +86,17 @@ func main() {
 			continue
 		}
 
+		// Определение chatID отправителя
+		senderChatID := update.Message.Chat.ID
+
 		// Пересылка сообщения каждому chat ID из списка chatIDs
 		for _, id := range chatIDs {
 			if update.Message.IsCommand() {
-				handleCommand(bot, update.Message, botLogger, id)
+				handleCommand(bot, update.Message, botLogger, senderChatID)
 			} else if update.Message.Photo != nil {
-				handlePhoto(bot, update.Message, botLogger, id)
+				handlePhoto(bot, update.Message, botLogger, id, senderChatID)
 			} else if update.Message.Text != "" {
-				handleText(bot, update.Message, botLogger, id)
+				handleText(bot, update.Message, botLogger, id, senderChatID)
 			}
 		}
 	}
@@ -116,42 +119,43 @@ func loadResponsesFromFile(filename string) error {
 
 // handleCommand обрабатывает команды от пользователей.
 // В зависимости от команды, отправляет соответствующее сообщение.
-func handleCommand(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, botLogger *logger.Logger, chatID int64) {
+func handleCommand(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, botLogger *logger.Logger, senderUserID int64) {
 	command := msg.Command()
+	chatID := msg.Chat.ID
 
 	switch command {
 	case "start":
 		response := responses[strings.ToLower(command)]
-		sendMessage(bot, chatID, response, botLogger)
+		sendMessage(bot, chatID, response, botLogger, senderUserID)
 	case "info":
 		response := responses[strings.ToLower(command)]
-		sendMessage(bot, chatID, response, botLogger)
+		sendMessage(bot, chatID, response, botLogger, senderUserID)
 	default:
-		sendMessage(bot, chatID, "Неизвестная команда.", botLogger)
+		sendMessage(bot, chatID, "Неизвестная команда.", botLogger, senderUserID)
 	}
 }
 
 // handlePhoto обрабатывает входящие фотографии от пользователей.
 // Пересылает фотографию в указанный chat ID с информацией об отправителе.
-func handlePhoto(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, botLogger *logger.Logger, chatID int64) {
+func handlePhoto(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, botLogger *logger.Logger, chatID, senderUserID int64) {
 	if msg.Photo != nil && len(*msg.Photo) > 0 {
 		photoID := (*msg.Photo)[len(*msg.Photo)-1].FileID
 		caption := fmt.Sprintf("Картинка от @%s\n\n%s", msg.From.UserName, msg.Caption)
-		forwardMessage(bot, chatID, photoID, caption, botLogger)
+		forwardPhoto(bot, chatID, photoID, caption, botLogger, senderUserID)
 	}
 }
 
 // handleText обрабатывает входящие текстовые сообщения от пользователей.
 // Пересылает текстовое сообщение в указанный chat ID с информацией об отправителе.
-func handleText(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, botLogger *logger.Logger, chatID int64) {
+func handleText(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, botLogger *logger.Logger, chatID, senderUserID int64) {
 	if msg.Text != "" {
 		text := fmt.Sprintf("Текст от @%s\n\n%s", msg.From.UserName, msg.Text)
-		sendMessage(bot, chatID, text, botLogger)
+		sendMessage(bot, chatID, text, botLogger, senderUserID)
 	}
 }
 
 // sendMessage отправляет сообщение пользователю с указанным chat ID.
-func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string, botLogger *logger.Logger) {
+func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string, botLogger *logger.Logger, senderUserID int64) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	_, err := bot.Send(msg)
 	if err != nil {
@@ -159,10 +163,15 @@ func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string, botLogger *log
 	} else {
 		botLogger.Log(fmt.Sprintf("Сообщение успешно отправлено в чат ID %d", chatID))
 	}
+
+	// Отправить подтверждающее сообщение только пользователю, который отправил сообщение
+	if chatID != senderUserID {
+		sendConfirmationToUser(bot, senderUserID, botLogger)
+	}
 }
 
-// forwardMessage пересылает фотографию с подписью в указанный chat ID.
-func forwardMessage(bot *tgbotapi.BotAPI, chatID int64, fileID string, caption string, botLogger *logger.Logger) {
+// forwardPhoto пересылает фотографию с подписью в указанный chat ID.
+func forwardPhoto(bot *tgbotapi.BotAPI, chatID int64, fileID string, caption string, botLogger *logger.Logger, senderUserID int64) {
 	msg := tgbotapi.NewPhotoShare(chatID, fileID)
 	msg.Caption = caption
 	_, err := bot.Send(msg)
@@ -170,5 +179,22 @@ func forwardMessage(bot *tgbotapi.BotAPI, chatID int64, fileID string, caption s
 		botLogger.Log(fmt.Sprintf("Ошибка пересылки сообщения в чат ID %d: %v", chatID, err))
 	} else {
 		botLogger.Log(fmt.Sprintf("Сообщение успешно переслано в чат ID %d", chatID))
+	}
+
+	// Отправить подтверждающее сообщение только пользователю, который отправил фотографию
+	if chatID != senderUserID {
+		sendConfirmationToUser(bot, senderUserID, botLogger)
+	}
+}
+
+// sendConfirmationToUser отправляет подтверждающее сообщение пользователю о том, что его сообщение было успешно отправлено.
+func sendConfirmationToUser(bot *tgbotapi.BotAPI, chatID int64, botLogger *logger.Logger) {
+	text := "Ваше сообщение отправлено, спасибо!"
+	msg := tgbotapi.NewMessage(chatID, text)
+	_, err := bot.Send(msg)
+	if err != nil {
+		botLogger.Log(fmt.Sprintf("Ошибка отправки подтверждения сообщения в чат ID %d: %v", chatID, err))
+	} else {
+		botLogger.Log(fmt.Sprintf("Подтверждение сообщения успешно отправлено в чат ID %d", chatID))
 	}
 }
