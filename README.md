@@ -40,4 +40,5 @@ To use the Gundam Feedback Bot, follow these steps:
 This Telegram bot is developed for educational and non-commercial purposes. The bot may not be suitable for production environments without further improvements and security considerations.
 
 ---
+
  🤖🚀
