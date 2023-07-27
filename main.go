@@ -114,7 +114,7 @@ func (bh *BotHandler) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			}
 		}
 
-		// Send confirmation message to the sender
+		// Отправка подтверждающего сообщения
 		bh.sendConfirmationToUser(senderChatID)
 	}
 }
