@@ -39,20 +39,20 @@ func loadResponsesFromFile(filename string) error {
 
 // Инициализация бота
 func newBotHandler(logger *logger.Logger) (*BotHandler, error) {
-	// Load .env file
+	// Загрузка .env файла
 	err := godotenv.Load()
 	if err != nil {
 		logger.Log(fmt.Sprintf("ошибка загрузки .env файла: %v", err))
 	}
 
-	// Get BOT_TOKEN from environment variable
+	// Получение BOT_TOKEN
 	botToken = os.Getenv("BOT_TOKEN")
 	if botToken == "" {
 		logger.Log("токен бота не найден в .env файле")
 		return nil, fmt.Errorf("токен бота не найден в .env файле")
 	}
 
-	// Get ADMIN_IDS from environment variable
+	// Получение ADMIN_IDS
 	adminIDStrings := os.Getenv("ADMIN_IDS")
 	if adminIDStrings == "" {
 		logger.Log("chat IDs не найдены в .env файле")
@@ -68,7 +68,7 @@ func newBotHandler(logger *logger.Logger) (*BotHandler, error) {
 		adminIDs = append(adminIDs, id) // Append parsed IDs to the package-level variable
 	}
 
-	// Create the bot instance
+	// Создаем экземпляр бота
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка создания бота: %v", err)
