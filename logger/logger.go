@@ -55,6 +55,22 @@ func (l *Logger) Log(message string) {
 	l.logger.Println(message)
 }
 
+// InitializeLoggerFromConfig загружает конфигурацию логгера из указанного JSON-файла,
+// инициализирует логгер на основе конфигурации и возвращает инициализированный логгер или ошибку.
+func InitializeLoggerFromConfig(configFile string) (*Logger, error) {
+	loggerConfig, err := LoadLoggerConfig(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	botLogger, err := SetupLogger(loggerConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return botLogger, nil
+}
+
 // Close закрывает файловый логгер.
 func (l *Logger) Close() error {
 	if l.file != nil {

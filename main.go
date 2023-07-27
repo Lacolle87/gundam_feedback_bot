@@ -38,57 +38,53 @@ func loadResponsesFromFile(filename string) error {
 }
 
 // Инициализация бота
-func newBotHandler() (*BotHandler, error) {
+func newBotHandler(logger *logger.Logger) (*BotHandler, error) {
+	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
-		return nil, fmt.Errorf("ошибка загрузки .env файла: %v", err)
+		logger.Log(fmt.Sprintf("ошибка загрузки .env файла: %v", err))
 	}
 
+	// Get BOT_TOKEN from environment variable
 	botToken = os.Getenv("BOT_TOKEN")
 	if botToken == "" {
+		logger.Log("токен бота не найден в .env файле")
 		return nil, fmt.Errorf("токен бота не найден в .env файле")
 	}
 
+	// Get ADMIN_IDS from environment variable
 	adminIDStrings := os.Getenv("ADMIN_IDS")
 	if adminIDStrings == "" {
+		logger.Log("chat IDs не найдены в .env файле")
 		return nil, fmt.Errorf("chat IDs не найдены в .env файле")
 	}
 
-	adminIDStringsSlice := strings.Split(adminIDStrings, ",")
-	for _, idStr := range adminIDStringsSlice {
+	adminIDs = make([]int64, 0) // Clear the package-level variable
+	for _, idStr := range strings.Split(adminIDStrings, ",") {
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка при парсинге chat ID: %v", err)
 		}
-		adminIDs = append(adminIDs, id)
+		adminIDs = append(adminIDs, id) // Append parsed IDs to the package-level variable
 	}
 
-	configFile := "config/logger_config.json"
-	loggerConfig, err := logger.LoadLoggerConfig(configFile)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка при загрузке конфигурации логгера: %v", err)
-	}
-
-	botLogger, err := logger.SetupLogger(loggerConfig)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка при инициализации логгера: %v", err)
-	}
-
+	// Create the bot instance
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка создания бота: %v", err)
 	}
 
 	bot.Debug = false
-	log.Printf("Успешная авторизация на аккаунте %s", bot.Self.UserName)
+	logger.Log(fmt.Sprintf("Успешная авторизация на аккаунте %s", bot.Self.UserName))
 
+	// Load responses from the JSON file
 	if err := loadResponsesFromFile("responses/responses.json"); err != nil {
 		return nil, fmt.Errorf("ошибка при загрузке ответов из файла JSON: %v", err)
 	}
 
 	return &BotHandler{
 		Bot:          bot,
-		Logger:       botLogger,
+		Logger:       logger,
 		SenderChatID: 0, // Изменить на chat ID отправителя, если это значение известно заранее
 	}, nil
 }
@@ -100,9 +96,6 @@ func (bh *BotHandler) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			continue
 		}
 
-		// Определение chatID отправителя
-		senderChatID := update.Message.Chat.ID
-
 		// Пересылка сообщения каждому chat ID из списка adminIDs
 		for _, id := range adminIDs {
 			if update.Message.IsCommand() {
@@ -113,9 +106,6 @@ func (bh *BotHandler) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				bh.handleText(update.Message, id)
 			}
 		}
-
-		// Отправка подтверждающего сообщения
-		bh.sendConfirmationToUser(senderChatID)
 	}
 }
 
@@ -136,20 +126,26 @@ func (bh *BotHandler) handleCommand(msg *tgbotapi.Message) {
 	}
 }
 
+// Обработчик входящих текстовых сообщений от пользователей
+func (bh *BotHandler) handleText(msg *tgbotapi.Message, chatID int64) {
+	if msg.Text != "" {
+		text := fmt.Sprintf("Текст от @%s\n\n%s", msg.From.UserName, msg.Text)
+		bh.sendMessage(chatID, text)
+
+		// Отправка подтверждающего сообщения только пользователю, который отправил текстовое сообщение
+		bh.sendConfirmationToUser(int64(msg.From.ID))
+	}
+}
+
 // Обработчик входящих фотографий от пользователей
 func (bh *BotHandler) handlePhoto(msg *tgbotapi.Message, chatID int64) {
 	if msg.Photo != nil && len(*msg.Photo) > 0 {
 		photoID := (*msg.Photo)[len(*msg.Photo)-1].FileID
 		caption := fmt.Sprintf("Картинка от @%s\n\n%s", msg.From.UserName, msg.Caption)
 		bh.forwardPhoto(chatID, photoID, caption)
-	}
-}
 
-// Обработчик входящих текстовых сообщений от пользователей
-func (bh *BotHandler) handleText(msg *tgbotapi.Message, chatID int64) {
-	if msg.Text != "" {
-		text := fmt.Sprintf("Текст от @%s\n\n%s", msg.From.UserName, msg.Text)
-		bh.sendMessage(chatID, text)
+		// Отправка подтверждающего сообщения только пользователю, который отправил фотографию
+		bh.sendConfirmationToUser(int64(msg.From.ID))
 	}
 }
 
@@ -183,17 +179,25 @@ func (bh *BotHandler) sendConfirmationToUser(chatID int64) {
 		msg := tgbotapi.NewMessage(chatID, text)
 		_, err := bh.Bot.Send(msg)
 		if err != nil {
-			bh.Logger.Log(fmt.Sprintf("Ошибка отправки подтверждения сообщения в чат ID %d: %v", chatID, err))
+			bh.Logger.Log(fmt.Sprintf("Ошибка отправки подтверждения сообщения в chat ID %d: %v", chatID, err))
 		} else {
-			bh.Logger.Log(fmt.Sprintf("Подтверждение сообщения успешно отправлено в чат ID %d", chatID))
+			bh.Logger.Log(fmt.Sprintf("Подтверждение сообщения успешно отправлено в chat ID %d", chatID))
 		}
 	}
 }
 
 func main() {
-	bh, err := newBotHandler()
+	configFile := "config/logger_config.json"
+
+	botLogger, err := logger.InitializeLoggerFromConfig(configFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Ошибка при инициализации логгера:", err)
+	}
+	defer botLogger.Close()
+
+	bh, err := newBotHandler(botLogger)
+	if err != nil {
+		botLogger.Log(fmt.Sprintf("Ошибка запуска бота: %v", err))
 	}
 
 	u := tgbotapi.NewUpdate(0)
@@ -201,7 +205,7 @@ func main() {
 
 	updates, err := bh.Bot.GetUpdatesChan(u)
 	if err != nil {
-		log.Fatal("Ошибка получения обновлений:", err)
+		botLogger.Log(fmt.Sprintf("Ошибка получения обновлений: %v", err))
 	}
 
 	bh.handleUpdates(updates)
