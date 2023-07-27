@@ -59,13 +59,13 @@ func newBotHandler(logger *logger.Logger) (*BotHandler, error) {
 		return nil, fmt.Errorf("chat IDs не найдены в .env файле")
 	}
 
-	adminIDs = make([]int64, 0) // Clear the package-level variable
+	adminIDs = make([]int64, 0) // Очищаем пакетную переменную
 	for _, idStr := range strings.Split(adminIDStrings, ",") {
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка при парсинге chat ID: %v", err)
 		}
-		adminIDs = append(adminIDs, id) // Append parsed IDs to the package-level variable
+		adminIDs = append(adminIDs, id) // Добавляем обработанные ID в пакетную переменную
 	}
 
 	// Создаем экземпляр бота
@@ -77,7 +77,7 @@ func newBotHandler(logger *logger.Logger) (*BotHandler, error) {
 	bot.Debug = false
 	logger.Log(fmt.Sprintf("Успешная авторизация на аккаунте %s", bot.Self.UserName))
 
-	// Load responses from the JSON file
+	// Загрузка ответов из файла JSON
 	if err := loadResponsesFromFile("responses/responses.json"); err != nil {
 		return nil, fmt.Errorf("ошибка при загрузке ответов из файла JSON: %v", err)
 	}

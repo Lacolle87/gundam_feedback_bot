@@ -28,7 +28,7 @@ type Logger struct {
 	file   *lumberjack.Logger
 }
 
-// NewLogger создает новый экземпляр логгера на основе переданных настроек.
+// SetupLogger создает новый экземпляр логгера на основе переданных настроек.
 // Возвращает инициализированный логгер или ошибку, если не удалось настроить логгер.
 func SetupLogger(config LoggerConfig) (*Logger, error) {
 	err := os.MkdirAll(config.LogDir, os.ModePerm)
