@@ -2,10 +2,11 @@ package bot
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"gundam_feedback_bot/loader"
 	"gundam_feedback_bot/logger"
-	"strings"
 )
 
 type Handler struct {

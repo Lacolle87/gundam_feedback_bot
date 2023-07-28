@@ -3,10 +3,11 @@ package loader
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 var BotToken string

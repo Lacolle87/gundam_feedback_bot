@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"gundam_feedback_bot/bot"
 	"gundam_feedback_bot/logger"
-	"log"
 )
 
 const configFile = "config/logger_config.json"

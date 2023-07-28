@@ -12,8 +12,8 @@ import (
 	"github.com/natefinch/lumberjack"
 )
 
-// LoggerConfig содержит параметры для настройки логгера.
-type LoggerConfig struct {
+// ConfigLogger содержит параметры для настройки логгера.
+type ConfigLogger struct {
 	LogDir     string `json:"logDir"`     // Директория для хранения логов
 	MaxSize    int    `json:"maxSize"`    // Максимальный размер файла лога в мегабайтах
 	MaxBackups int    `json:"maxBackups"` // Максимальное количество старых файлов лога, которые нужно сохранить
@@ -46,7 +46,7 @@ func InitializeLoggerFromConfig(configFile string) (*Logger, error) {
 
 // SetupLogger создает новый экземпляр логгера на основе переданных настроек.
 // Возвращает инициализированный логгер или ошибку, если не удалось настроить логгер.
-func SetupLogger(config LoggerConfig) (*Logger, error) {
+func SetupLogger(config ConfigLogger) (*Logger, error) {
 	err := os.MkdirAll(config.LogDir, os.ModePerm)
 	if err != nil {
 		return nil, err
@@ -100,17 +100,22 @@ func getTimezone(timezone string) *time.Location {
 }
 
 // LoadLoggerConfig загружает конфигурацию логгера из JSON-файла.
-func LoadLoggerConfig(configPath string) (LoggerConfig, error) {
+func LoadLoggerConfig(configPath string) (ConfigLogger, error) {
 	file, err := os.Open(configPath)
 	if err != nil {
-		return LoggerConfig{}, err
+		return ConfigLogger{}, err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatal("Ошибка при закрытие файла:", err)
+		}
+	}(file)
 
-	var config LoggerConfig
+	var config ConfigLogger
 	err = json.NewDecoder(file).Decode(&config)
 	if err != nil {
-		return LoggerConfig{}, err
+		return ConfigLogger{}, err
 	}
 
 	return config, nil
