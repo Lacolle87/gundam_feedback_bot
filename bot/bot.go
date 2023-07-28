@@ -36,35 +36,40 @@ func loadResponsesFromFile(filename string) error {
 	return nil
 }
 
-// NewBotHandler Инициализация бота
-func NewBotHandler(logger *logger.Logger) (*BotHandler, error) {
-	// Загрузка .env файла
+// LoadEnv Загружает значения из файла .env и устанавливает необходимые переменные окружения.
+func LoadEnv() error {
 	err := godotenv.Load()
 	if err != nil {
-		logger.Log(fmt.Sprintf("ошибка загрузки .env файла: %v", err))
+		return fmt.Errorf("ошибка загрузки .env файла: %v", err)
 	}
 
-	// Получение BOT_TOKEN
 	botToken = os.Getenv("BOT_TOKEN")
 	if botToken == "" {
-		logger.Log("токен бота не найден в .env файле")
-		return nil, fmt.Errorf("токен бота не найден в .env файле")
+		return fmt.Errorf("токен бота не найден в .env файле")
 	}
 
-	// Получение ADMIN_IDS
 	adminIDStrings := os.Getenv("ADMIN_IDS")
 	if adminIDStrings == "" {
-		logger.Log("chat IDs не найдены в .env файле")
-		return nil, fmt.Errorf("chat IDs не найдены в .env файле")
+		return fmt.Errorf("chat IDs не найдены в .env файле")
 	}
 
 	adminIDs = make([]int64, 0) // Очищаем пакетную переменную
 	for _, idStr := range strings.Split(adminIDStrings, ",") {
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("ошибка при парсинге chat ID: %v", err)
+			return fmt.Errorf("ошибка при парсинге chat ID: %v", err)
 		}
 		adminIDs = append(adminIDs, id) // Добавляем обработанные ID в пакетную переменную
+	}
+
+	return nil
+}
+
+// NewBotHandler Инициализация бота
+func NewBotHandler(botLogger *logger.Logger) (*BotHandler, error) {
+	// Загрузка .env файла
+	if err := LoadEnv(); err != nil {
+		return nil, err
 	}
 
 	// Создаем экземпляр бота
@@ -74,7 +79,7 @@ func NewBotHandler(logger *logger.Logger) (*BotHandler, error) {
 	}
 
 	bot.Debug = false
-	logger.Log(fmt.Sprintf("Успешная авторизация на аккаунте %s", bot.Self.UserName))
+	botLogger.Log(fmt.Sprintf("Успешная авторизация на аккаунте %s", bot.Self.UserName))
 
 	// Загрузка ответов из файла JSON
 	if err := loadResponsesFromFile("responses/responses.json"); err != nil {
@@ -83,7 +88,7 @@ func NewBotHandler(logger *logger.Logger) (*BotHandler, error) {
 
 	return &BotHandler{
 		Bot:          bot,
-		Logger:       logger,
+		Logger:       botLogger,
 		SenderChatID: 0, // Изменить на chat ID отправителя, если это значение известно заранее
 	}, nil
 }
