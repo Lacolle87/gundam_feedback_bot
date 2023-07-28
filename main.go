@@ -8,14 +8,19 @@ import (
 	"log"
 )
 
-func main() {
-	configFile := "config/logger_config.json"
+const configFile = "config/logger_config.json"
 
+func main() {
 	botLogger, err := logger.InitializeLoggerFromConfig(configFile)
 	if err != nil {
 		log.Fatal("Ошибка при инициализации логгера:", err)
 	}
-	defer botLogger.Close()
+	defer func(botLogger *logger.Logger) {
+		err := botLogger.Close()
+		if err != nil {
+			log.Fatal("Ошибка при закрытие логгера:", err)
+		}
+	}(botLogger)
 
 	bh, err := bot.NewBotHandler(botLogger)
 	if err != nil {

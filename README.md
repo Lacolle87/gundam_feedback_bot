@@ -27,7 +27,7 @@ To use the Gundam Feedback Bot, follow these steps:
 4. **Install Dependencies**: Make sure you have Go installed on your system. Navigate to the project directory and run:
    go mod download
 
-5. **Configure Logger**: Edit the `config/logger_config.json` file to customize the logging behavior, such as log file path, log level, etc.
+5. **Configure BotLogger**: Edit the `config/logger_config.json` file to customize the logging behavior, such as log file path, log level, etc.
 
 6. **Load Responses**: Customize the responses to commands in the `responses/responses.json` file.
 
