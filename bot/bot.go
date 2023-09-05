@@ -6,17 +6,15 @@ import (
 
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"gundam_feedback_bot/loader"
-	"gundam_feedback_bot/logger"
 )
 
 type Handler struct {
 	Bot          *tgbotapi.BotAPI
-	BotLogger    *logger.Logger
 	SenderChatID int64
 }
 
 // NewBotHandler Инициализация бота
-func NewBotHandler(botLogger *logger.Logger) (*Handler, error) {
+func NewBotHandler() (*Handler, error) {
 	// Загрузка .env файла
 	if err := loader.LoadEnv(); err != nil {
 		return nil, err
@@ -29,7 +27,7 @@ func NewBotHandler(botLogger *logger.Logger) (*Handler, error) {
 	}
 
 	bot.Debug = false
-	botLogger.Log(fmt.Sprintf("Успешная авторизация на аккаунте %s", bot.Self.UserName))
+	loader.BotLogger.Log(fmt.Sprintf("Успешная авторизация на аккаунте %s", bot.Self.UserName))
 
 	// Загрузка ответов из файла JSON
 	if err := loader.LoadResponsesFromFile("responses/responses.json"); err != nil {
@@ -38,7 +36,6 @@ func NewBotHandler(botLogger *logger.Logger) (*Handler, error) {
 
 	return &Handler{
 		Bot:          bot,
-		BotLogger:    botLogger,
 		SenderChatID: 0, // Изменить на chat ID отправителя, если это значение известно заранее
 	}, nil
 }
@@ -108,9 +105,9 @@ func (bh *Handler) sendMessage(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	_, err := bh.Bot.Send(msg)
 	if err != nil {
-		bh.BotLogger.Log(fmt.Sprintf("Ошибка отправки сообщения в чат ID %d: %v", chatID, err))
+		loader.BotLogger.Log(fmt.Sprintf("Ошибка отправки сообщения в чат ID %d: %v", chatID, err))
 	} else {
-		bh.BotLogger.Log(fmt.Sprintf("Сообщение успешно отправлено в чат ID %d", chatID))
+		loader.BotLogger.Log(fmt.Sprintf("Сообщение успешно отправлено в чат ID %d", chatID))
 	}
 }
 
@@ -120,9 +117,9 @@ func (bh *Handler) forwardPhoto(chatID int64, fileID string, caption string) {
 	msg.Caption = caption
 	_, err := bh.Bot.Send(msg)
 	if err != nil {
-		bh.BotLogger.Log(fmt.Sprintf("Ошибка пересылки сообщения в чат ID %d: %v", chatID, err))
+		loader.BotLogger.Log(fmt.Sprintf("Ошибка пересылки сообщения в чат ID %d: %v", chatID, err))
 	} else {
-		bh.BotLogger.Log(fmt.Sprintf("Сообщение успешно переслано в чат ID %d", chatID))
+		loader.BotLogger.Log(fmt.Sprintf("Сообщение успешно переслано в чат ID %d", chatID))
 	}
 }
 
@@ -133,9 +130,9 @@ func (bh *Handler) sendConfirmationToUser(chatID int64) {
 		msg := tgbotapi.NewMessage(chatID, text)
 		_, err := bh.Bot.Send(msg)
 		if err != nil {
-			bh.BotLogger.Log(fmt.Sprintf("Ошибка отправки подтверждения сообщения в chat ID %d: %v", chatID, err))
+			loader.BotLogger.Log(fmt.Sprintf("Ошибка отправки подтверждения сообщения в chat ID %d: %v", chatID, err))
 		} else {
-			bh.BotLogger.Log(fmt.Sprintf("Подтверждение сообщения успешно отправлено в chat ID %d", chatID))
+			loader.BotLogger.Log(fmt.Sprintf("Подтверждение сообщения успешно отправлено в chat ID %d", chatID))
 		}
 	}
 }

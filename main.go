@@ -2,30 +2,22 @@ package main
 
 import (
 	"fmt"
+	"gundam_feedback_bot/loader"
 	"log"
 
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"gundam_feedback_bot/bot"
-	"gundam_feedback_bot/logger"
 )
 
-const configFile = "config/logger_config.json"
-
 func main() {
-	botLogger, err := logger.InitializeLoggerFromConfig(configFile)
+	err := loader.LoadLoggerFromConfig()
 	if err != nil {
-		log.Fatal("Ошибка при инициализации логгера:", err)
+		log.Println(err)
 	}
-	defer func(botLogger *logger.Logger) {
-		err := botLogger.Close()
-		if err != nil {
-			log.Fatal("Ошибка при закрытие логгера:", err)
-		}
-	}(botLogger)
 
-	bh, err := bot.NewBotHandler(botLogger)
+	bh, err := bot.NewBotHandler()
 	if err != nil {
-		botLogger.Log(fmt.Sprintf("Ошибка запуска бота: %v", err))
+		loader.BotLogger.Log(fmt.Sprintf("Ошибка запуска бота: %v", err))
 	}
 
 	u := tgbotapi.NewUpdate(0)
@@ -33,7 +25,7 @@ func main() {
 
 	updates, err := bh.Bot.GetUpdatesChan(u)
 	if err != nil {
-		botLogger.Log(fmt.Sprintf("Ошибка получения обновлений: %v", err))
+		loader.BotLogger.Log(fmt.Sprintf("Ошибка получения обновлений: %v", err))
 	}
 
 	bh.HandleUpdates(updates)

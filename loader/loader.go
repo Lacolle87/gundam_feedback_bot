@@ -3,6 +3,7 @@ package loader
 import (
 	"encoding/json"
 	"fmt"
+	"gundam_feedback_bot/logger"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +14,19 @@ import (
 var BotToken string
 var AdminIDs []int64
 var Responses map[string]string
+var BotLogger *logger.Logger
+
+const configFilePath = "config/logger_config.json"
+
+// LoadLoggerFromConfig загружает логгер из конфигурационного файла.
+func LoadLoggerFromConfig() error {
+	botLogger, err := logger.InitializeLoggerFromConfig(configFilePath)
+	if err != nil {
+		return fmt.Errorf("ошибка при инициализации логгера: %v", err)
+	}
+	BotLogger = botLogger
+	return nil
+}
 
 // LoadResponsesFromFile Загрузка ответов из файла JSON
 func LoadResponsesFromFile(filename string) error {
