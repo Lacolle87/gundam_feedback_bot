@@ -68,6 +68,5 @@ func LoadEnv() error {
 		}
 		AdminIDs = append(AdminIDs, id) // Добавляем обработанные ID в пакетную переменную
 	}
-
 	return nil
 }
